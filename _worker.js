@@ -34,6 +34,12 @@ let 自定义域名系统 = 'https://223.5.5.5/dns-query';
 let 自定义加密客户端问候域名 = 'cloudflare-ech.com';
 let 自定义应用层协议协商 = '';
 let 订阅转换接口 = 解码64('aHR0cHM6Ly91cmwudjEubWsvc3Vi');
+// ===== 请求优化：缓存与限流容器（减少 Cloudflare 免费配额消耗） =====
+let 订阅结果缓存 = new Map();
+let 优选列表缓存 = new Map();
+let 限流状态表 = new Map();
+const 订阅缓存默认秒数 = 300;  // 订阅内容缓存 5 分钟
+const 优选缓存默认秒数 = 1800; // 优选地址列表缓存 30 分钟
 // 远程配置URL（硬编码）
 const 远程配置网址 = 'https://raw.githubusercontent.com/byJoey/test/refs/heads/main/tist.ini';
 let 启用优选域名 = true; // 优选域名默认关闭
@@ -626,6 +632,25 @@ export default {
         }
       }
       await 处理值键值值(本地值734);
+      // ===== 请求优化：非代理请求 IP 限流（代理流量/WS握手不受影响） =====
+      if (!是否网页套接字 && !是否值732) {
+        const 限流客户端IP = 请求735.headers.get('CF-Connecting-IP') || 'unknown';
+        const 限流阈值 = Math.max(10, parseInt(获取配置文本值('rl', '60'), 10) || 60);
+        const 当前时间戳 = Date.now();
+        let 限流条目 = 限流状态表.get(限流客户端IP);
+        if (!限流条目 || 限流条目.reset < 当前时间戳) {
+          限流状态表.set(限流客户端IP, { count: 1, reset: 当前时间戳 + 60000 });
+        } else {
+          限流条目.count++;
+          if (限流条目.count > 限流阈值) {
+            return new Response('Too Many Requests', {
+              status: 429,
+              headers: { 'Retry-After': '60', 'Cache-Control': 'no-store' }
+            });
+          }
+        }
+        if (限流状态表.size > 2000) 限流状态表.clear();
+      }
       认证令牌 = (本地值734.u || 本地值734.U || 认证令牌).toLowerCase();
       const 值路径 = (本地值734.d || 本地值734.D || 认证令牌).toLowerCase();
       const 本地值726 = 获取配置值('p', 本地值734.p || 本地值734.P);
@@ -2649,6 +2674,19 @@ async function 处理订阅请求(请求507, 用户506, 网址505 = null) {
   const 工作器域名504 = 网址505.hostname;
   const 目标503 = 网址505.searchParams.get('target') || 'base64';
   const 别名命名器502 = 创建值节点命名器(false);
+  // ===== 请求优化：订阅内容缓存 =====
+  const 订阅缓存密钥 = `${用户506}|${目标503.toLowerCase()}|${工作器域名504}|${启用明文}|${启用木马}|${启用扩展传输}|${启用加密客户端问候}|${当前工作器地区}|${优选地址源}`;
+  const 订阅缓存有效期 = Math.max(30, parseInt(获取配置文本值('subCache', String(订阅缓存默认秒数)), 10) || 订阅缓存默认秒数);
+  const 订阅缓存命中项 = 订阅结果缓存.get(订阅缓存密钥);
+  if (订阅缓存命中项 && 订阅缓存命中项.expire > Date.now()) {
+    const 命中响应头 = {
+      'Content-Type': 订阅缓存命中项.type,
+      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      'X-Sub-Cache': 'HIT'
+    };
+    if (启用加密客户端问候) 命中响应头['X-ECH-Status'] = 'ENABLED';
+    return new Response(订阅缓存命中项.content, { headers: 命中响应头 });
+  }
 
   // 如果启用了ECH，使用自定义值
   let 加密客户端问候配置501 = null;
@@ -2839,6 +2877,15 @@ async function 处理订阅请求(请求507, 用户506, 网址505 = null) {
       响应头部列表['X-ECH-Config-Length'] = String(加密客户端问候配置501.length);
     }
   }
+  // ===== 请求优化：写入订阅缓存（降级结果只缓存 30 秒） =====
+  const 是否降级结果 = 最终链接列表.length === 1 && 最终链接列表[0].includes('127.0.0.1');
+  订阅结果缓存.set(订阅缓存密钥, {
+    content: 订阅内容,
+    type: 内容类型483,
+    expire: Date.now() + (是否降级结果 ? 30000 : 订阅缓存有效期 * 1000)
+  });
+  if (订阅结果缓存.size > 50) 订阅结果缓存.clear();
+  响应头部列表['X-Sub-Cache'] = 'MISS';
   return new Response(订阅内容, {
     headers: 响应头部列表
   });
@@ -3014,6 +3061,17 @@ async function 计算值摘要(文本434) {
   return Array.from(new Uint8Array(缓冲区434)).map(字节434 => 字节434.toString(16).padStart(2, '0')).join('');
 }
 async function 获取值地址列表() {
+  // ===== 请求优化：外部优选接口结果缓存 =====
+  const 外部优选缓存键 = 'uouin';
+  const 外部优选命中 = 优选列表缓存.get(外部优选缓存键);
+  if (外部优选命中 && 外部优选命中.expire > Date.now()) return 外部优选命中.value;
+  const 外部优选结果 = await 获取值地址列表内层();
+  const 外部优选秒数 = 外部优选结果.length > 0 ? 优选缓存默认秒数 : 60;
+  优选列表缓存.set(外部优选缓存键, { value: 外部优选结果, expire: Date.now() + 外部优选秒数 * 1000 });
+  if (优选列表缓存.size > 50) 优选列表缓存.clear();
+  return 外部优选结果;
+}
+async function 获取值地址列表内层() {
   const 分组线路映射 = {
     ctcc: '电信',
     cucc: '联通',
@@ -8371,6 +8429,17 @@ function 处理格式值(本地值114, 偏移 = 0) {
   return 标识;
 }
 async function 获取值解析新地址列表() {
+  // ===== 请求优化：远程优选列表/仓库配置结果缓存 =====
+  const 仓库优选缓存键 = 'repo:' + (优选地址源 || 'default');
+  const 仓库优选命中 = 优选列表缓存.get(仓库优选缓存键);
+  if (仓库优选命中 && 仓库优选命中.expire > Date.now()) return 仓库优选命中.value;
+  const 仓库优选结果 = await 获取值解析新地址列表内层();
+  const 仓库优选秒数 = 仓库优选结果.length > 0 ? 优选缓存默认秒数 : 60;
+  优选列表缓存.set(仓库优选缓存键, { value: 仓库优选结果, expire: Date.now() + 仓库优选秒数 * 1000 });
+  if (优选列表缓存.size > 50) 优选列表缓存.clear();
+  return 仓库优选结果;
+}
+async function 获取值解析新地址列表内层() {
   const 网址113 = 优选地址源;
   try {
     const 网址列表112 = 网址113.includes(',') ? 网址113.split(',').map(网址值111 => 网址值111.trim()).filter(网址值 => 网址值) : [网址113];
