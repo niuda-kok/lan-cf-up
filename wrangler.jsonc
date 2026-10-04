@@ -1,5 +1,12 @@
 {
   "name": "lan-cf-up",
   "main": "_worker.js",
-  "compatibility_date": "2026-01-20"
+  "compatibility_date": "2026-01-20",
+  "secrets_store_secrets": [
+    {
+      "binding": "u",
+      "store_id": "72eb0451d4714efca5fadcfa26ff85ca",
+      "secret_name": "cf-new-uuid"
+    }
+  ]
 }
