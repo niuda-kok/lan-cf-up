@@ -1,5 +1,5 @@
-// CFnew - 终端 v3.1
-// 版本: v3.1 
+// CFnew - 终端 kok-v-3.1
+// 版本: kok-v-3.1 
 import { connect as 连接 } from 'cloudflare:sockets';
 const 基础64文本解码器 = new TextDecoder();
 function 解码64(文本) {
@@ -1046,8 +1046,8 @@ export default {
           const 语言值661 = 是否值664 ? 'fa-IR' : 'zh-CN';
           const 本地值660 = {
             zh: {
-              title: '终端 v3.1',
-              terminal: '终端 v3.1',
+              title: '终端 kok-v-3.1',
+              terminal: '终端 kok-v-3.1',
               congratulations: '恭喜你来到这',
               enterU: '请输入你U变量的值',
               enterD: '请输入你D变量的值',
@@ -1063,8 +1063,8 @@ export default {
               reenter: '请重新输入有效的UUID'
             },
             fa: {
-              title: 'ترمینال v3.1',
-              terminal: 'ترمینال v3.1',
+              title: 'ترمینال kok-v-3.1',
+              terminal: 'ترمینال kok-v-3.1',
               congratulations: 'تبریک می‌گوییم به شما',
               enterU: 'لطفا مقدار متغیر U خود را وارد کنید',
               enterD: 'لطفا مقدار متغیر D خود را وارد کنید',
@@ -4443,7 +4443,7 @@ async function 处理订阅值(请求241, 用户240 = null) {
         FI: '🇫🇮 芬兰',
         GB: '🇬🇧 英国'
       },
-      terminal: '终端 v3.1',
+      terminal: '终端 kok-v-3.1',
       githubProject: 'GitHub 项目',
       优选工具: '优选工具',
       autoDetectClient: '自动识别',
@@ -4600,7 +4600,7 @@ async function 处理订阅值(请求241, 用户240 = null) {
         FI: '🇫🇮 فنلاند',
         GB: '🇬🇧 بریتانیا'
       },
-      terminal: 'ترمینال v3.1',
+      terminal: 'ترمینال kok-v-3.1',
       githubProject: 'پروژه GitHub',
       优选工具: 'ابزار ترجیح IP',
       autoDetectClient: 'تشخیص خودکار',
