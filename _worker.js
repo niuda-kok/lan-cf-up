@@ -624,8 +624,13 @@ export default {
       const 是否值732 = 请求735.method === 'POST';
       const 请求网址731 = new URL(请求735.url);
       const 路径值730 = 请求网址731.pathname.split('/').filter(参数值729 => 参数值729);
+      // 兼容 Secrets Store 绑定（env.u 为对象，需异步取字符串值）
+      let 令牌值u = 本地值734.u;
+      if (令牌值u && typeof 令牌值u.get === 'function') {
+        try { 令牌值u = await 令牌值u.get(); } catch (令牌读取错误) { 令牌值u = ''; }
+      }
       if (!是否网页套接字 && !是否值732 && 请求网址731.pathname !== '/') {
-        const 值值728 = (本地值734.u || 本地值734.U || '').toLowerCase();
+        const 值值728 = (令牌值u || 本地值734.U || '').toLowerCase();
         const 值值727 = (本地值734.d || 本地值734.D || '').toLowerCase();
         const 首次值 = 路径值730[0] || '';
         const 清理值 = 值值727.startsWith('/') ? 值值727.substring(1) : 值值727;
@@ -655,7 +660,7 @@ export default {
         }
         if (限流状态表.size > 2000) 限流状态表.clear();
       }
-      认证令牌 = (本地值734.u || 本地值734.U || 认证令牌).toLowerCase();
+      认证令牌 = (令牌值u || 本地值734.U || 认证令牌).toLowerCase();
       const 值路径 = (本地值734.d || 本地值734.D || 认证令牌).toLowerCase();
       const 本地值726 = 获取配置值('p', 本地值734.p || 本地值734.P);
       let 值自定义地址 = false;
